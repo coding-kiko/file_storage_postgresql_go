@@ -1,5 +1,5 @@
 run:
-	PORT=5000 go run cmd/main.go
+	go run cmd/main.go -STORAGE=$(storage) 
 
 client:
 	FILENAME=$(filename) go run client/client.go

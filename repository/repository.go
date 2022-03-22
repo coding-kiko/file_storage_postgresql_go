@@ -1,6 +1,8 @@
 package repository
 
 import (
+	//std lib
+	"database/sql"
 	"net/http"
 )
 
@@ -17,12 +19,13 @@ type Respository interface {
 
 func NewRepo(cfg DBConfig) Respository {
 	// check if file_storage is chosen as database (default)
-	if cfg.DB == "fs" {
+	if cfg.Storage == "fs" {
 		return &fileStorage{relativePath: fileStorageRelativePath}
 	}
-	return &postgresDB{}
+	return &postgresDB{db: cfg.DB}
 }
 
 type DBConfig struct {
-	DB string
+	Storage string
+	DB      *sql.DB
 }

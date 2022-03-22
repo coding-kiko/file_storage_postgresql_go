@@ -1,8 +1,10 @@
 package server
 
 import (
+	// std lib
 	"net/http"
 
+	// Internal
 	"github.com/coding-kiko/file_storage_testing/repository"
 )
 

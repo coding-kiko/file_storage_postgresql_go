@@ -21,8 +21,8 @@ var (
 
 func main() {
 	route := "http://" + addr + port
-	PostFile(route)
-	//GetFile(route)
+	//PostFile(route)
+	GetFile(route)
 }
 
 func PostFile(route string) {
@@ -33,7 +33,7 @@ func PostFile(route string) {
 	fileWriter, _ := bodyWriter.CreateFormFile("filename", filename)
 
 	// open file handle
-	fh, err := os.Open("./tmp/" + filename)
+	fh, err := os.Open("./" + filename)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -52,7 +52,7 @@ func PostFile(route string) {
 	defer resp.Body.Close()
 	bd, _ := ioutil.ReadAll(resp.Body)
 	os.Stdout.Write(bd)
-	fmt.Println("Succesfully sotred file")
+	fmt.Println("Succesfully stored file")
 }
 
 func GetFile(route string) {
@@ -71,7 +71,7 @@ func GetFile(route string) {
 		return
 	}
 	// Create blank file
-	newFilePath := "./tmp/" + filename
+	newFilePath := "./" + filename
 	file, err := os.Create(newFilePath)
 	if err != nil {
 		panic(err)

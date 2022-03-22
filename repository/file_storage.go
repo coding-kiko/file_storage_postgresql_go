@@ -1,6 +1,7 @@
 package repository
 
 import (
+	// std lib
 	"errors"
 	"io"
 	"net/http"
@@ -33,7 +34,7 @@ func (fs *fileStorage) CreateFile(w http.ResponseWriter, r *http.Request) error 
 	}
 	file, handler, err := r.FormFile("filename")
 	if err != nil {
-		return errors.New("error uploading file")
+		return errors.New("error forming file")
 	}
 	defer file.Close()
 	f, err := os.OpenFile(fs.relativePath+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
