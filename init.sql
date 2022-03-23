@@ -1,4 +1,0 @@
-CREATE TABLE IF NOT EXISTS files (
-	name VARCHAR(255),
-  file BYTEA,
-);

@@ -2,6 +2,7 @@ version: '3.7'
 services:
     postgres:
         image: postgres:latest
+        restart: always
         container_name: postgres
         environment:
           - POSTGRES_USER=postgres
@@ -10,4 +11,11 @@ services:
         ports:
           - 5432:5432
         volumes:
-            - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+            - ./db:/docker-entrypoint-initdb.d/
+            - ./db/postgres-data:/var/lib/postgresql/data
+    adminer:
+      image: adminer:latest
+      ports:
+        - 8080:8080
+volumes:
+  postgres-data:

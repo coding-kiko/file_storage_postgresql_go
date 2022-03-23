@@ -1,0 +1,14 @@
+{
+	"users": [
+		{
+			"email": "kikoaudi2001@gmail.com",
+			"pwd": "$2a$14$IQaDVuch6pvFbZDZ4mDvHeMs4n8YBP70Gd1jdGUlxORzjSleBwOlO",
+			"jwt": ""
+		},
+		{
+			"email": "francisco.calixto@globant.com",
+			"pwd": "$2a$14$SdRH65O/HtWJwCATEKq9E.Qc5paOKAK.K2gM3XBhv6LW9liXhI9KW",
+			"jwt": ""
+		}
+	]
+}

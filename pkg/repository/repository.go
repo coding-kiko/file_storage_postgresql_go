@@ -8,7 +8,7 @@ import (
 
 // relative to where the main program is being executed
 const (
-	fileStorageRelativePath = "./repository/file_storage/"
+	fileStorageRelativePath = "./pkg/repository/file_storage/"
 	MAX_UPLOAD_SIZE         = 1024 * 1024 * 2 // (2 MB)
 )
 
