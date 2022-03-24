@@ -2,6 +2,9 @@ package auth
 
 import (
 	// std lib
+	"encoding/json"
+	"errors"
+	"io/ioutil"
 	"time"
 
 	// Third party
@@ -12,6 +15,52 @@ var (
 	secretKey = "secret"
 	issuer    = "localhost:5000/"
 )
+
+func ValidateJwt(token string) error {
+	tk, err := jwt.ParseWithClaims(token, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secretKey), nil
+	})
+	if err != nil {
+		return errors.New("invalid token")
+	}
+	claims, ok := tk.Claims.(*Claims)
+	if !ok {
+		return errors.New("invalid token")
+	}
+
+	if claims.ExpiresAt < time.Now().UTC().Unix() {
+		return errors.New("expired token")
+	}
+	err = CheckAvailableRequests(claims.Name)
+	return err
+}
+
+// open cache file and check if user has available requests with current jwt
+func CheckAvailableRequests(email string) error {
+	var users Users
+	data, err := ioutil.ReadFile(cacheFile)
+	if err != nil {
+		return err
+	}
+	json.Unmarshal(data, &users)
+	for i, u := range users.Users {
+		if u.Email == email {
+			if users.Users[i].Requests == 0 {
+				return errors.New("request amount exceeded, sign in again")
+			}
+			users.Users[i].Requests = u.Requests - 1
+			data, err = json.MarshalIndent(users, "", "\t")
+			if err != nil {
+				return err
+			}
+			err = ioutil.WriteFile(cacheFile, data, 0644)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
 
 func NewToken(name string) string {
 	signingKey := []byte(secretKey)
@@ -26,13 +75,4 @@ func NewToken(name string) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, _ := token.SignedString(signingKey)
 	return signedToken
-}
-
-type Claims struct {
-	Name string
-	jwt.StandardClaims
-}
-
-func (c Claims) Valid() error {
-	return nil
 }

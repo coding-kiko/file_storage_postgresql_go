@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"time"
 )
 
 var (
@@ -16,6 +17,7 @@ var (
 	getRoute    = "/file"
 	postRoute   = "/upload"
 	queryParams = "?filename="
+	token       = os.Getenv("token")
 	filename    = os.Getenv("FILENAME")
 )
 
@@ -26,7 +28,7 @@ func main() {
 }
 
 func PostFile(route string) {
-	req := route + postRoute + queryParams + filename
+	url := route + postRoute + queryParams + filename
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 
@@ -45,7 +47,19 @@ func PostFile(route string) {
 	contentType := bodyWriter.FormDataContentType()
 	bodyWriter.Close()
 
-	resp, err := http.Post(req, contentType, bodyBuf)
+	req, err := http.NewRequest("POST", url, bodyBuf)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	client := http.Client{Timeout: time.Second * 10}
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -56,8 +70,15 @@ func PostFile(route string) {
 }
 
 func GetFile(route string) {
-	req := route + getRoute + queryParams + filename
-	resp, err := http.Get(req)
+	url := route + getRoute + queryParams + filename
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	client := &http.Client{Timeout: time.Second * 10}
+	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return

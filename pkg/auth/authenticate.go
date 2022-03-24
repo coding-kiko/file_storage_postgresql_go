@@ -18,9 +18,19 @@ func Authenticate(creds Credentials) (string, error) {
 	}
 
 	json.Unmarshal(data, &users)
-	for _, u := range users.Users {
+	for i, u := range users.Users {
 		if u.Email == creds.Email {
 			if err = bcrypt.CompareHashAndPassword([]byte(u.Pwd), []byte(creds.Pwd)); err == nil {
+				// Sets 5 requests for the user to use before expiring
+				users.Users[i].Requests = 5
+				data, err = json.MarshalIndent(users, "", "\t")
+				if err != nil {
+					return "", err
+				}
+				err = ioutil.WriteFile(cacheFile, data, 0644)
+				if err != nil {
+					return "", err
+				}
 				return NewToken(creds.Email), nil
 			}
 		}
