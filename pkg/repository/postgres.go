@@ -58,9 +58,9 @@ func (pgDB *postgresDB) CreateFile(w http.ResponseWriter, r *http.Request) error
 		return errors.New("error uploading file")
 	}
 	defer f.Close()
-	defer os.Remove(handler.Filename)
+	defer os.Remove("./tmp/" + handler.Filename)
 	io.Copy(f, file)
-	data, _ := ioutil.ReadFile(handler.Filename)
+	data, _ := ioutil.ReadFile("./tmp/" + handler.Filename)
 	// TODO END
 
 	_, err = pgDB.db.ExecContext(context.Background(), insertFileQuery, handler.Filename, data)

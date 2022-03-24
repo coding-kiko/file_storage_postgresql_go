@@ -34,6 +34,8 @@ func GetFileHandler(db repository.Respository) http.Handler {
 			w.Write([]byte(fmt.Sprintf(`{"status": 404, "message": "%s"}`, err.Error())))
 			return
 		}
+		w.Write([]byte(`{"status": 200, "message": "file retrieved successfully"}`))
+		w.Write([]byte("\n"))
 	})
 }
 
@@ -52,6 +54,9 @@ func CreateFileHandler(db repository.Respository) http.Handler {
 			w.Write([]byte(fmt.Sprintf(`{"status": 400, "message": "%s"}`, err.Error())))
 			return
 		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status": 200, "message": "file stored successfully"}`))
+		w.Write([]byte("\n"))
 	})
 }
 
@@ -79,6 +84,7 @@ func AuthenticateHandler() http.Handler {
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(fmt.Sprintf(`{"token": "%s"}`, token)))
+		w.Write([]byte("\n"))
 	})
 }
 
@@ -104,6 +110,9 @@ func RegisterHandler() http.Handler {
 			w.Write([]byte(`{"status": 422, "message": "invalid credentials"}`))
 			return
 		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status": 200, "message": "user registered"}`))
+		w.Write([]byte("\n"))
 	})
 }
 
@@ -112,18 +121,21 @@ func JwtMiddleware(next http.Handler) http.Handler {
 		if r.Header["Authorization"] == nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(`{"status": 400, "message": "Missing header: 'Authorization'"}`))
+			w.Write([]byte("\n"))
 			return
 		}
 		authorization := strings.Split(r.Header["Authorization"][0], " ")
 		if authorization[0] != "Bearer" {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(`{"status": 400, "message": "Malformed header: wrong authentication scheme"}`))
+			w.Write([]byte("\n"))
 			return
 		}
 		err := auth.ValidateJwt(authorization[1])
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(fmt.Sprintf(`{"status": 401, "message": "%s"}`, err.Error())))
+			w.Write([]byte("\n"))
 			return
 		}
 		next.ServeHTTP(w, r)
