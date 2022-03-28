@@ -3,7 +3,7 @@ A simple file storage api that can use either /pkg/repository/file_storage or Po
 ## How to use:
 
 ### Spinning up locally (standing on the root folder):
-`docker-compose up -d` if you have docker installed in your machine, the postgres and adminer image will be pulled automatically 
+`docker-compose up -d` if you have docker installed in your machine, the postgres and adminer image will be pulled automatically \
 `make storage=(storage) run`  (*storage=fs* for directory storage | *storage=postgres* for postgres storage)
 
 
