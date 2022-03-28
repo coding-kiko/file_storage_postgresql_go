@@ -18,4 +18,9 @@ download:
 authenticate:
 	curl -XPOST localhost:5000/authenticate \
 	-H 'Content-Type:application/json' \
-	-d '{"email":"francisco.calixto@globant.com", "pwd":"admin"}' \
+	-d '{"email":"francisco.calixto@globant.com", "pwd":"admin"}'
+
+register:
+	curl -XPOST localhost:5000/register \
+	-H 'Content-Type:application/json' \
+	-d '{"email":"$(email))", "pwd":"$(pwd))"}'
