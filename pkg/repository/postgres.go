@@ -29,7 +29,7 @@ func (pgDB *postgresDB) GetFile(w http.ResponseWriter, r *http.Request, filename
 
 	err := pgDB.db.QueryRow(getFileQuery).Scan(&data)
 	if err != nil {
-		panic(err.Error())
+		return errors.New("file not found")
 	}
 	err = ioutil.WriteFile(filepath, data, 0666)
 	if err != nil {
@@ -65,7 +65,8 @@ func (pgDB *postgresDB) CreateFile(w http.ResponseWriter, r *http.Request) error
 
 	_, err = pgDB.db.ExecContext(context.Background(), insertFileQuery, handler.Filename, data)
 	if err != nil {
-		panic(err)
+		// probably duplicate (filename is primary key)
+		return errors.New("error uploading file")
 	}
 	return nil
 }

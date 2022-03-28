@@ -41,10 +41,8 @@ func main() {
 	db := repository.NewRepo(dbCfg)
 
 	mux := http.NewServeMux()
-	// mux.Handle("/file", server.JwtMiddleware(server.GetFileHandler(db)))
-	// mux.Handle("/upload", server.JwtMiddleware(server.CreateFileHandler(db)))
-	mux.Handle("/file", server.GetFileHandler(db))
-	mux.Handle("/upload", server.CreateFileHandler(db))
+	mux.Handle("/file", server.JwtMiddleware(server.GetFileHandler(db)))
+	mux.Handle("/upload", server.JwtMiddleware(server.CreateFileHandler(db)))
 	mux.Handle("/authenticate", server.AuthenticateHandler())
 	mux.Handle("/register", server.RegisterHandler())
 

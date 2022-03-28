@@ -32,6 +32,7 @@ func (fs *fileStorage) CreateFile(w http.ResponseWriter, r *http.Request) error 
 	if err != nil {
 		return errors.New("file size exceeded")
 	}
+
 	file, handler, err := r.FormFile("filename")
 	if err != nil {
 		return errors.New("error forming file")

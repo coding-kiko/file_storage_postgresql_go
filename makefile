@@ -1,3 +1,5 @@
+# all of the following commands are relative to the root folder of the project
+
 run:
 	go run cmd/main.go -STORAGE=$(storage) 
 
@@ -6,10 +8,12 @@ upload:
 	-H 'Authorization: Bearer $(token)' \
 	-F "filename=@./client/$(file)"
 
+# NOTE: the response is stored in the file, wether successful or not
+# could improve with a bash script -> store to file in case of success, output to terminal if it fails
 download:
 	curl localhost:5000/file?filename=$(file) \
 	-H 'Authorization: Bearer $(token)' \
-	--output ./client/$(file)
+	-o ./client/$(file)
 
 authenticate:
 	curl -XPOST localhost:5000/authenticate \

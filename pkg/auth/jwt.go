@@ -31,8 +31,7 @@ func ValidateJwt(token string) error {
 	if claims.ExpiresAt < time.Now().UTC().Unix() {
 		return errors.New("expired token")
 	}
-	err = CheckAvailableRequests(claims.Name)
-	return err
+	return CheckAvailableRequests(claims.Name)
 }
 
 // open cache file and check if user has available requests with current jwt
