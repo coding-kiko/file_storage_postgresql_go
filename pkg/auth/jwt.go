@@ -2,9 +2,8 @@ package auth
 
 import (
 	// std lib
-	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"fmt"
 	"time"
 
 	// Third party
@@ -16,7 +15,8 @@ var (
 	issuer    = "localhost:5000/"
 )
 
-func ValidateJwt(token string) error {
+func (rd *redisDB) ValidateJwt(token string) error {
+	// parse token with secret passphrase
 	tk, err := jwt.ParseWithClaims(token, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(secretKey), nil
 	})
@@ -27,36 +27,26 @@ func ValidateJwt(token string) error {
 	if !ok {
 		return errors.New("invalid token")
 	}
-
+	// check expiry date
 	if claims.ExpiresAt < time.Now().UTC().Unix() {
 		return errors.New("expired token")
 	}
-	return CheckAvailableRequests(claims.Name)
-}
 
-// open cache file and check if user has available requests with current jwt
-func CheckAvailableRequests(email string) error {
-	var users Users
-	data, err := ioutil.ReadFile(cacheFile)
+	// check and rate limit the number of requests
+	req, err := rd.conn.Do("HGET", "users:"+claims.Name, "requests")
 	if err != nil {
 		return err
 	}
-	json.Unmarshal(data, &users)
-	for i, u := range users.Users {
-		if u.Email == email {
-			if users.Users[i].Requests == 0 {
-				return errors.New("request amount exceeded, sign in again")
-			}
-			users.Users[i].Requests = u.Requests - 1
-			data, err = json.MarshalIndent(users, "", "\t")
-			if err != nil {
-				return err
-			}
-			err = ioutil.WriteFile(cacheFile, data, 0644)
-			if err != nil {
-				return err
-			}
-		}
+
+	n := fmt.Sprintf("%s", req)
+	if n == "0" {
+		return errors.New("request amount exceeded, sign in again")
+	}
+	// subtract "1" to the current number of requests
+	n = string(rune(int([]rune(n)[0]) - 1))
+	_, err = rd.conn.Do("HSET", "users:"+claims.Name, "requests", n)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -66,7 +56,7 @@ func NewToken(name string) string {
 	claims := Claims{
 		name,
 		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Duration(5) * time.Minute).Unix(),
+			ExpiresAt: time.Now().Add(time.Duration(15) * time.Minute).Unix(),
 			IssuedAt:  time.Now().Unix(),
 			Issuer:    issuer,
 		},

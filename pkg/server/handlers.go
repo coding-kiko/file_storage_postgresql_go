@@ -60,7 +60,7 @@ func CreateFileHandler(db repository.Respository) http.Handler {
 	})
 }
 
-func AuthenticateHandler() http.Handler {
+func AuthenticateHandler(rd auth.RedisRespository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var creds auth.Credentials
 		w.Header().Set("Content-Type", "application/json")
@@ -76,10 +76,10 @@ func AuthenticateHandler() http.Handler {
 			w.Write([]byte(`{"status": 400, "message": "Bad request"}`))
 			return
 		}
-		token, err := auth.Authenticate(creds)
+		token, err := rd.Authenticate(creds)
 		if err != nil {
 			w.WriteHeader(http.StatusUnprocessableEntity)
-			w.Write([]byte(`{"status": 422, "message": "Invalid credentials"}`))
+			w.Write([]byte(fmt.Sprintf(`{"status": 422, "message": "%s"}`, err.Error())))
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -88,7 +88,7 @@ func AuthenticateHandler() http.Handler {
 	})
 }
 
-func RegisterHandler() http.Handler {
+func RegisterHandler(rd auth.RedisRespository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var creds auth.Credentials
 		w.Header().Set("Content-Type", "application/json")
@@ -104,7 +104,7 @@ func RegisterHandler() http.Handler {
 			w.Write([]byte(`{"status": 400, "message": "Bad request"}`))
 			return
 		}
-		err = auth.Register(creds)
+		err = rd.Register(creds)
 		if err != nil {
 			w.WriteHeader(http.StatusUnprocessableEntity)
 			w.Write([]byte(`{"status": 422, "message": "invalid credentials"}`))
@@ -116,7 +116,7 @@ func RegisterHandler() http.Handler {
 	})
 }
 
-func JwtMiddleware(next http.Handler) http.Handler {
+func JwtMiddleware(next http.Handler, rd auth.RedisRespository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header["Authorization"] == nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -131,7 +131,7 @@ func JwtMiddleware(next http.Handler) http.Handler {
 			w.Write([]byte("\n"))
 			return
 		}
-		err := auth.ValidateJwt(authorization[1])
+		err := rd.ValidateJwt(authorization[1])
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(fmt.Sprintf(`{"status": 401, "message": "%s"}`, err.Error())))

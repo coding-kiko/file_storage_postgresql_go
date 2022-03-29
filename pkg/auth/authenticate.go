@@ -2,38 +2,26 @@ package auth
 
 import (
 	//std lib
-	"encoding/json"
+
 	"errors"
-	"io/ioutil"
+	"fmt"
 
 	// Third party
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Authenticate(creds Credentials) (string, error) {
-	var users Users
-	data, err := ioutil.ReadFile(cacheFile)
+func (rd *redisDB) Authenticate(creds Credentials) (string, error) {
+	resp, err := rd.conn.Do("HGET", "users:"+creds.Email, "pwd")
+	if err != nil || resp == nil {
+		return "", errors.New("invalid credentials")
+	}
+	pwdHsh := fmt.Sprintf("%s", resp)
+	if err = bcrypt.CompareHashAndPassword([]byte(pwdHsh), []byte(creds.Pwd)); err != nil {
+		return "", errors.New("invalid credentials")
+	}
+	_, err = rd.conn.Do("HSET", "users:"+creds.Email, "requests", "5")
 	if err != nil {
 		return "", err
 	}
-
-	json.Unmarshal(data, &users)
-	for i, u := range users.Users {
-		if u.Email == creds.Email {
-			if err = bcrypt.CompareHashAndPassword([]byte(u.Pwd), []byte(creds.Pwd)); err == nil {
-				// Sets 5 requests for the user to use before expiring
-				users.Users[i].Requests = 5
-				data, err = json.MarshalIndent(users, "", "\t")
-				if err != nil {
-					return "", err
-				}
-				err = ioutil.WriteFile(cacheFile, data, 0644)
-				if err != nil {
-					return "", err
-				}
-				return NewToken(creds.Email), nil
-			}
-		}
-	}
-	return "", errors.New("invalid credentials")
+	return NewToken(creds.Email), nil
 }
