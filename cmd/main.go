@@ -12,6 +12,7 @@ import (
 	"github.com/coding-kiko/file_storage_testing/pkg/auth"
 	"github.com/coding-kiko/file_storage_testing/pkg/repository"
 	"github.com/coding-kiko/file_storage_testing/pkg/server"
+	"github.com/coding-kiko/file_storage_testing/pkg/service"
 
 	// third party
 	"github.com/gomodule/redigo/redis"
@@ -44,10 +45,11 @@ func main() {
 	}
 	defer db.Close()
 	pg := repository.NewRepo(db)
+	sv := service.NewService(pg)
 
 	mux := http.NewServeMux()
-	mux.Handle("/file", server.JwtMiddleware(server.GetFileHandler(pg), rd))
-	mux.Handle("/upload", server.JwtMiddleware(server.CreateFileHandler(pg), rd))
+	mux.Handle("/file", server.JwtMiddleware(server.GetFileHandler(sv), rd))
+	mux.Handle("/upload", server.JwtMiddleware(server.CreateFileHandler(sv), rd))
 	mux.Handle("/authenticate", server.AuthenticateHandler(rd))
 	mux.Handle("/register", server.RegisterHandler(rd))
 

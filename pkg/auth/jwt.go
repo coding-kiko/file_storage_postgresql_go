@@ -44,6 +44,7 @@ func (rd *redisDB) ValidateJwt(token string) error {
 	}
 	// subtract "1" to the current number of requests
 	n = string(rune(int([]rune(n)[0]) - 1))
+
 	_, err = rd.conn.Do("HSET", "users:"+claims.Name, "requests", n)
 	if err != nil {
 		return err

@@ -9,10 +9,10 @@ import (
 
 	// Internal
 	"github.com/coding-kiko/file_storage_testing/pkg/auth"
-	"github.com/coding-kiko/file_storage_testing/pkg/repository"
+	"github.com/coding-kiko/file_storage_testing/pkg/service"
 )
 
-func GetFileHandler(db repository.Respository) http.Handler {
+func GetFileHandler(sv service.ImageService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		// check if filename is not passed correctly through query params
@@ -28,7 +28,7 @@ func GetFileHandler(db repository.Respository) http.Handler {
 			w.Write([]byte(`{"status": 405, "message": "Method not allowed"}`))
 			return
 		}
-		err := db.GetFile(w, r, filename)
+		err := sv.GetFile(w, r, filename)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte(fmt.Sprintf(`{"status": 404, "message": "%s"}`, err.Error())))
@@ -39,7 +39,7 @@ func GetFileHandler(db repository.Respository) http.Handler {
 	})
 }
 
-func CreateFileHandler(db repository.Respository) http.Handler {
+func CreateFileHandler(sv service.ImageService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		// check if another method other than POST has reached the endpoint
@@ -48,7 +48,7 @@ func CreateFileHandler(db repository.Respository) http.Handler {
 			w.Write([]byte(`{"status": 405, "message": "Method not allowed"}`))
 			return
 		}
-		err := db.CreateFile(w, r)
+		err := sv.CreateFile(w, r)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(fmt.Sprintf(`{"status": 400, "message": "%s"}`, err.Error())))
