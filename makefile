@@ -11,7 +11,7 @@ upload:
 # NOTE: the response is stored in the file, wether successful or not
 # could improve with a bash script -> store to file in case of success, output to terminal if it fails
 download:
-	curl localhost:5000/file?filename=$(file) \
+	curl localhost:5000/download?filename=$(file) \
 	-H 'Authorization: Bearer $(token)' \
 	-o ./client/$(file)
 

@@ -15,6 +15,15 @@ var (
 	issuer    = "localhost:5000/"
 )
 
+type Claims struct {
+	Name string
+	jwt.StandardClaims
+}
+
+func (c Claims) Valid() error {
+	return nil
+}
+
 func (rd *redisDB) ValidateJwt(token string) error {
 	// parse token with secret passphrase
 	tk, err := jwt.ParseWithClaims(token, &Claims{}, func(token *jwt.Token) (interface{}, error) {

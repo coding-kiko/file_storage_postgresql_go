@@ -30,12 +30,11 @@ var (
 func main() {
 	flag.Parse()
 
-	rconn, err := redis.Dial("tcp", *redisAddr)
+	redisConn, err := redis.Dial("tcp", *redisAddr)
 	if err != nil {
 		panic(err)
 	}
-	defer rconn.Close()
-	rd := auth.NewRedisRepo(rconn)
+	defer redisConn.Close()
 
 	// make postgres connection
 	connString := fmt.Sprintf("postgres://postgres:%s@%s/%s%s", *pwd, *dBAddr, *database, "?sslmode=disable")
@@ -44,15 +43,10 @@ func main() {
 		panic(err)
 	}
 	defer db.Close()
-	pg := repository.NewRepo(db)
-	sv := service.NewService(pg)
+	serviceHandlers := server.NewServiceHandlers(service.NewService(repository.NewRepo(db)))
+	authHandlers := server.NewAuthHandlers(auth.NewRedisRepo(redisConn))
 
-	mux := http.NewServeMux()
-	mux.Handle("/file", server.JwtMiddleware(server.GetFileHandler(sv), rd))
-	mux.Handle("/upload", server.JwtMiddleware(server.CreateFileHandler(sv), rd))
-	mux.Handle("/authenticate", server.AuthenticateHandler(rd))
-	mux.Handle("/register", server.RegisterHandler(rd))
-
+	mux := server.Init(serviceHandlers, authHandlers)
 	fmt.Printf("Started listening on %s\n", *port)
 	addr := fmt.Sprintf("localhost:%s", *port)
 	err = http.ListenAndServe(addr, mux)
