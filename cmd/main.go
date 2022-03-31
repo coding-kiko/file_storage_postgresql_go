@@ -10,9 +10,9 @@ import (
 
 	// Internal
 	"github.com/coding-kiko/file_storage_testing/pkg/auth"
-	"github.com/coding-kiko/file_storage_testing/pkg/repository"
+	"github.com/coding-kiko/file_storage_testing/pkg/files_service/repository"
+	"github.com/coding-kiko/file_storage_testing/pkg/files_service/service"
 	"github.com/coding-kiko/file_storage_testing/pkg/server"
-	"github.com/coding-kiko/file_storage_testing/pkg/service"
 
 	// third party
 	"github.com/gomodule/redigo/redis"

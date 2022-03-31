@@ -9,7 +9,7 @@ import (
 	"os"
 
 	// Internal
-	"github.com/coding-kiko/file_storage_testing/pkg/repository"
+	"github.com/coding-kiko/file_storage_testing/pkg/files_service/repository"
 )
 
 const (

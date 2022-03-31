@@ -9,7 +9,7 @@ import (
 
 	// Internal
 	"github.com/coding-kiko/file_storage_testing/pkg/auth"
-	"github.com/coding-kiko/file_storage_testing/pkg/service"
+	"github.com/coding-kiko/file_storage_testing/pkg/files_service/service"
 )
 
 type authHandlers struct {
