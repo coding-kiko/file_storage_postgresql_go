@@ -13,7 +13,7 @@ upload:
 download:
 	curl localhost:5000/download?filename=$(file) \
 	-H 'Authorization: Bearer $(token)' \
-	-o ./client/$(file)
+	-o ./client/$(output)
 
 authenticate:
 	curl -XPOST localhost:5000/authenticate \

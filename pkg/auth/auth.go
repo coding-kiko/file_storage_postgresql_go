@@ -20,13 +20,13 @@ type redisDB struct {
 	conn redis.Conn
 }
 
-type RedisRespository interface {
+type RedisRepository interface {
 	Authenticate(creds Credentials) (string, error)
 	Register(creds Credentials) error
-	ValidateJwt(token string) error
+	ValidateJwt(token string) (string, error)
 }
 
-func NewRedisRepo(conn redis.Conn) RedisRespository {
+func NewRedisRepo(conn redis.Conn) RedisRepository {
 	return &redisDB{conn: conn}
 }
 

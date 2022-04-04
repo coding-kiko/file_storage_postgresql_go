@@ -10,13 +10,14 @@ import (
 
 	// Internal
 	"github.com/coding-kiko/file_storage_testing/pkg/auth"
-	"github.com/coding-kiko/file_storage_testing/pkg/files_service/repository"
-	"github.com/coding-kiko/file_storage_testing/pkg/files_service/service"
+	"github.com/coding-kiko/file_storage_testing/pkg/file_processing_service"
+	"github.com/coding-kiko/file_storage_testing/pkg/file_transfer_service"
 	"github.com/coding-kiko/file_storage_testing/pkg/server"
 
 	// third party
 	"github.com/gomodule/redigo/redis"
 	_ "github.com/lib/pq"
+	"github.com/streadway/amqp"
 )
 
 var (
@@ -30,6 +31,7 @@ var (
 func main() {
 	flag.Parse()
 
+	// redis connection
 	redisConn, err := redis.Dial("tcp", *redisAddr)
 	if err != nil {
 		panic(err)
@@ -38,13 +40,32 @@ func main() {
 
 	// make postgres connection
 	connString := fmt.Sprintf("postgres://postgres:%s@%s/%s%s", *pwd, *dBAddr, *database, "?sslmode=disable")
-	db, err := sql.Open("postgres", connString)
+	postgresDb, err := sql.Open("postgres", connString)
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
-	serviceHandlers := server.NewServiceHandlers(service.NewService(repository.NewRepo(db)))
-	authHandlers := server.NewAuthHandlers(auth.NewRedisRepo(redisConn))
+	defer postgresDb.Close()
+
+	// rabbitmq connection
+	rabbitConn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	if err != nil {
+		panic(err)
+	}
+	defer rabbitConn.Close()
+
+	// initialize file processing service layers
+	fileProcessingRepo := file_processing_service.NewRepo(postgresDb)
+	fileProcessingServ := file_processing_service.NewService(fileProcessingRepo)
+	go file_processing_service.NewQueueConsumer(*rabbitConn, fileProcessingServ)
+
+	// initialize file transfer service layers
+	fileTransferRepo := file_transfer_service.NewRepo(postgresDb)
+	fileTransferServ := file_transfer_service.NewService(fileTransferRepo, *rabbitConn)
+	serviceHandlers := server.NewServiceHandlers(fileTransferServ)
+
+	// initialize authentication service layers
+	authRepo := auth.NewRedisRepo(redisConn)
+	authHandlers := server.NewAuthHandlers(authRepo)
 
 	mux := server.Init(serviceHandlers, authHandlers)
 	fmt.Printf("Started listening on %s\n", *port)

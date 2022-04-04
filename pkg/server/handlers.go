@@ -9,14 +9,14 @@ import (
 
 	// Internal
 	"github.com/coding-kiko/file_storage_testing/pkg/auth"
-	"github.com/coding-kiko/file_storage_testing/pkg/files_service/service"
+	fts "github.com/coding-kiko/file_storage_testing/pkg/file_transfer_service"
 )
 
 type authHandlers struct {
-	redisRepo auth.RedisRespository
+	redisRepo auth.RedisRepository
 }
 
-func NewAuthHandlers(redisRepo auth.RedisRespository) AuthHandlers {
+func NewAuthHandlers(redisRepo auth.RedisRepository) AuthHandlers {
 	return &authHandlers{redisRepo: redisRepo}
 }
 
@@ -27,10 +27,10 @@ type AuthHandlers interface {
 }
 
 type serviceHandlers struct {
-	service service.ImageService
+	service fts.ImageService
 }
 
-func NewServiceHandlers(service service.ImageService) ServiceHandlers {
+func NewServiceHandlers(service fts.ImageService) ServiceHandlers {
 	return &serviceHandlers{service: service}
 }
 
@@ -75,7 +75,8 @@ func (sh *serviceHandlers) CreateFileHandler() http.Handler {
 			w.Write([]byte(`{"status": 405, "message": "Method not allowed"}`))
 			return
 		}
-		err := sh.service.CreateFile(w, r)
+		username := r.Header["Username"][0]
+		err := sh.service.CreateFile(w, r, username)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(fmt.Sprintf(`{"status": 400, "message": "%s"}`, err.Error())))
@@ -158,13 +159,14 @@ func (ah *authHandlers) JwtMiddleware(next http.Handler) http.Handler {
 			w.Write([]byte("\n"))
 			return
 		}
-		err := ah.redisRepo.ValidateJwt(authorization[1])
+		username, err := ah.redisRepo.ValidateJwt(authorization[1])
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(fmt.Sprintf(`{"status": 401, "message": "%s"}`, err.Error())))
 			w.Write([]byte("\n"))
 			return
 		}
+		r.Header.Add("Username", username)
 		next.ServeHTTP(w, r)
 	})
 }
