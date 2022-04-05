@@ -17,5 +17,26 @@ services:
       image: adminer:latest
       ports:
         - 8080:8080
+
+    redis:
+      image: redis:6.2-alpine
+      restart: always
+      container_name: redis
+      ports:
+        - 6379:6379
+      command: redis-server --save 60 1 --loglevel warning 
+      volumes:
+        - ./db/redis-data:/data
+
+    rabbitmq:
+      image: rabbitmq:3-management-alpine
+      container_name: 'rabbitmq'
+      ports:
+        - 5672:5672
+        - 15672:15672
+      volumes:
+        - ./db/rabbitmq-data:/var/lib/rabbitmq/
+
 volumes:
   postgres-data:
+  redis-data:

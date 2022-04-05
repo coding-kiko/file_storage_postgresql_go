@@ -9,10 +9,37 @@ import (
 
 	// Internal
 	"github.com/coding-kiko/file_storage_testing/pkg/auth"
-	"github.com/coding-kiko/file_storage_testing/pkg/repository"
+	fts "github.com/coding-kiko/file_storage_testing/pkg/file_transfer_service"
 )
 
-func GetFileHandler(db repository.Respository) http.Handler {
+type authHandlers struct {
+	redisRepo auth.RedisRepository
+}
+
+func NewAuthHandlers(redisRepo auth.RedisRepository) AuthHandlers {
+	return &authHandlers{redisRepo: redisRepo}
+}
+
+type AuthHandlers interface {
+	AuthenticateHandler() http.Handler
+	RegisterHandler() http.Handler
+	JwtMiddleware(next http.Handler) http.Handler
+}
+
+type serviceHandlers struct {
+	service fts.ImageService
+}
+
+func NewServiceHandlers(service fts.ImageService) ServiceHandlers {
+	return &serviceHandlers{service: service}
+}
+
+type ServiceHandlers interface {
+	GetFileHandler() http.Handler
+	CreateFileHandler() http.Handler
+}
+
+func (sh *serviceHandlers) GetFileHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		// check if filename is not passed correctly through query params
@@ -28,7 +55,7 @@ func GetFileHandler(db repository.Respository) http.Handler {
 			w.Write([]byte(`{"status": 405, "message": "Method not allowed"}`))
 			return
 		}
-		err := db.GetFile(w, r, filename)
+		err := sh.service.GetFile(w, r, filename)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte(fmt.Sprintf(`{"status": 404, "message": "%s"}`, err.Error())))
@@ -39,7 +66,7 @@ func GetFileHandler(db repository.Respository) http.Handler {
 	})
 }
 
-func CreateFileHandler(db repository.Respository) http.Handler {
+func (sh *serviceHandlers) CreateFileHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		// check if another method other than POST has reached the endpoint
@@ -48,7 +75,8 @@ func CreateFileHandler(db repository.Respository) http.Handler {
 			w.Write([]byte(`{"status": 405, "message": "Method not allowed"}`))
 			return
 		}
-		err := db.CreateFile(w, r)
+		username := r.Header["Username"][0]
+		err := sh.service.CreateFile(w, r, username)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(fmt.Sprintf(`{"status": 400, "message": "%s"}`, err.Error())))
@@ -60,7 +88,7 @@ func CreateFileHandler(db repository.Respository) http.Handler {
 	})
 }
 
-func AuthenticateHandler() http.Handler {
+func (ah *authHandlers) AuthenticateHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var creds auth.Credentials
 		w.Header().Set("Content-Type", "application/json")
@@ -76,10 +104,10 @@ func AuthenticateHandler() http.Handler {
 			w.Write([]byte(`{"status": 400, "message": "Bad request"}`))
 			return
 		}
-		token, err := auth.Authenticate(creds)
+		token, err := ah.redisRepo.Authenticate(creds)
 		if err != nil {
 			w.WriteHeader(http.StatusUnprocessableEntity)
-			w.Write([]byte(`{"status": 422, "message": "Invalid credentials"}`))
+			w.Write([]byte(fmt.Sprintf(`{"status": 422, "message": "%s"}`, err.Error())))
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -88,7 +116,7 @@ func AuthenticateHandler() http.Handler {
 	})
 }
 
-func RegisterHandler() http.Handler {
+func (ah *authHandlers) RegisterHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var creds auth.Credentials
 		w.Header().Set("Content-Type", "application/json")
@@ -104,7 +132,7 @@ func RegisterHandler() http.Handler {
 			w.Write([]byte(`{"status": 400, "message": "Bad request"}`))
 			return
 		}
-		err = auth.Register(creds)
+		err = ah.redisRepo.Register(creds)
 		if err != nil {
 			w.WriteHeader(http.StatusUnprocessableEntity)
 			w.Write([]byte(`{"status": 422, "message": "invalid credentials"}`))
@@ -116,7 +144,7 @@ func RegisterHandler() http.Handler {
 	})
 }
 
-func JwtMiddleware(next http.Handler) http.Handler {
+func (ah *authHandlers) JwtMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header["Authorization"] == nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -131,13 +159,14 @@ func JwtMiddleware(next http.Handler) http.Handler {
 			w.Write([]byte("\n"))
 			return
 		}
-		err := auth.ValidateJwt(authorization[1])
+		username, err := ah.redisRepo.ValidateJwt(authorization[1])
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(fmt.Sprintf(`{"status": 401, "message": "%s"}`, err.Error())))
 			w.Write([]byte("\n"))
 			return
 		}
+		r.Header.Add("Username", username)
 		next.ServeHTTP(w, r)
 	})
 }
