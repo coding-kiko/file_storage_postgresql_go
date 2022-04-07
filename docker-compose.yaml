@@ -1,5 +1,24 @@
 version: '3.7'
 services:
+    file-service:
+        image: file-services
+        container_name: file-services
+        ports:
+          - 5000:5000
+        environment:
+          - API_PORT=5000
+          - POSTGRES_DB=file_storage
+          - POSTGRES_CONTAINER=postgres
+          - POSTGRES_PORT=5432
+          - POSTGRES_PWD=admin
+          - REDIS_CONTAINER=redis
+          - REDIS_PORT=6379
+          - RABBIT_CONTAINER=guest:guest@rabbitmq
+          - RABBIT_PORT=5672
+        depends_on:
+          - "redis"
+          - "postgres"
+          - "rabbitmq"
     postgres:
         image: postgres:latest
         restart: always
@@ -15,6 +34,7 @@ services:
             - ./db/postgres-data:/var/lib/postgresql/data
     adminer:
       image: adminer:latest
+      container_name: file_storage-adminer
       ports:
         - 8080:8080
 
@@ -30,7 +50,7 @@ services:
 
     rabbitmq:
       image: rabbitmq:3-management-alpine
-      container_name: 'rabbitmq'
+      container_name: rabbitmq
       ports:
         - 5672:5672
         - 15672:15672

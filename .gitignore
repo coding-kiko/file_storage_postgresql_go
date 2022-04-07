@@ -1,3 +1,4 @@
 db/postgres-data/
 db/rabbitmq-data/
-db/redis-data/
+db/redis-data
+.gitignore
