@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/caarlos0/env v3.5.0+incompatible // indirect
+	github.com/caarlos0/env/v6 v6.9.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/gomodule/redigo/redis v0.0.1

@@ -3,7 +3,6 @@ package main
 import (
 	// std lib
 	"database/sql"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,39 +14,47 @@ import (
 	"github.com/coding-kiko/file_storage_testing/pkg/server"
 
 	// third party
+	"github.com/caarlos0/env/v6"
 	"github.com/gomodule/redigo/redis"
 	_ "github.com/lib/pq"
 	"github.com/streadway/amqp"
 )
 
-var (
-	port      = flag.String("PORT", "5000", "api port")
-	dBAddr    = flag.String("DBADDR", "localhost:5432", "database address")
-	pwd       = flag.String("PWD", "admin", "postgres password")
-	database  = flag.String("DB", "file_storage", "postgres database")
-	redisAddr = flag.String("REDIS", "localhost:6379", "redis db addr")
-)
+type config struct {
+	ApiPort           string `env:"API_PORT" envDefault:"5000"`
+	PostgresDB        string `env:"POSTGRES_DB" envDefault:"file_storage"`
+	PostgresContainer string `env:"POSTGRES:CONTAINER" envDefault:"postgres"`
+	PostgresPort      string `env:"POSTGRES_PORT" envDefault:"5432"`
+	PostgresPwd       string `env:"POSTGRES_PWD" envDefault:"admin"`
+	RedisContainer    string `env:"REDIS_CONTAINER" envDefault:"redis"`
+	RedisPort         string `env:"REDIS_PORT" envDefault:"6379"`
+	RabbitContainer   string `env:"RABBIT_CONTAINER" envDefault:"rabbitmq"`
+	RabbitPort        string `env:"RABBIT_PORT" envDefault:"5672"`
+}
 
 func main() {
-	flag.Parse()
+	cfg := config{}
+	err := env.Parse(&cfg)
 
 	// redis connection
-	redisConn, err := redis.Dial("tcp", *redisAddr)
+	redisConnString := fmt.Sprintf("%s:%s", cfg.RedisContainer, cfg.RedisPort)
+	redisConn, err := redis.Dial("tcp", redisConnString)
 	if err != nil {
 		panic(err)
 	}
 	defer redisConn.Close()
 
 	// make postgres connection
-	connString := fmt.Sprintf("postgres://postgres:%s@%s/%s%s", *pwd, *dBAddr, *database, "?sslmode=disable")
-	postgresDb, err := sql.Open("postgres", connString)
+	postgresConnString := fmt.Sprintf("postgres://postgres:%s@%s:%s/%s%s", cfg.PostgresPwd, cfg.PostgresContainer, cfg.PostgresPort, cfg.PostgresDB, "?sslmode=disable")
+	postgresDb, err := sql.Open("postgres", postgresConnString)
 	if err != nil {
 		panic(err)
 	}
 	defer postgresDb.Close()
 
 	// rabbitmq connection
-	rabbitConn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	rabbitConnString := fmt.Sprintf("amqp://%s:%s/", cfg.RabbitContainer, cfg.RabbitPort)
+	rabbitConn, err := amqp.Dial(rabbitConnString)
 	if err != nil {
 		panic(err)
 	}
@@ -68,8 +75,8 @@ func main() {
 	authHandlers := server.NewAuthHandlers(authRepo)
 
 	mux := server.Init(serviceHandlers, authHandlers)
-	fmt.Printf("Started listening on %s\n", *port)
-	addr := fmt.Sprintf("localhost:%s", *port)
+	fmt.Printf("Started listening on %s\n", cfg.ApiPort)
+	addr := fmt.Sprintf("0.0.0.0:%s", cfg.ApiPort)
 	err = http.ListenAndServe(addr, mux)
 	log.Fatal(err)
 }
